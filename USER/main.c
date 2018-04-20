@@ -8,6 +8,8 @@
 #include "taskrun.h"
 #include "delay.h"
 #include "config.h"
+#include "pwm.h"
+#include "fastmath.h"
 
 uint8_t SYS_INIT_OK=0;
 
@@ -16,7 +18,9 @@ int main(void)
 	delay_init();
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	//设置中断优先级分组为组2：2位抢占优先级，2位响应优先级
 	SYS_INIT_OK=0;									//初始化完成
-	UART4_Init(500000);								//串口初始化为115200
+	UART4_Init(115200);								//串口初始化为115200
+	
+	PWM_Init();										//PWM初始化
 	
 	TIM3_Int_Init(1000-1,72-1);
 	AHRS_Data_Init();								//姿态解算数据初始化
@@ -37,8 +41,6 @@ int main(void)
 		mpu6050.Acc_Offset.x,mpu6050.Acc_Offset.y,mpu6050.Acc_Offset.z
 	);
 	SYS_INIT_OK=1;									//初始化完成
-	
-	
 	
 	while(1)
 	{

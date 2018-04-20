@@ -69,7 +69,7 @@ void ANO_DT_Data_Exchange(void)
 	else if(f.send_status)
 	{
 		f.send_status = 0;
-		ANO_DT_Send_Status(Angle.x,Angle.y,Angle.z,100,1,0);
+		ANO_DT_Send_Status(Angle.y,Angle.x,Angle.z,100,1,0);
 	}	
 /////////////////////////////////////////////////////////////////////////////////////
 	else if(f.send_senser)

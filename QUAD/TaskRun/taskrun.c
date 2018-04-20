@@ -21,7 +21,6 @@ uint8_t send_anodt=0;		//发送到匿名上位机
 uint8_t log_attitude=0;		//通过串口记录姿态信息
 void TaskRun(void)
 {
-	static uint32_t i=0;
 	static u16 ms1 = 0,ms2 = 0,ms5 = 0,ms10 = 0,ms100 = 0,ms1000 = 0;	//中断次数计数器
 	if(!SYS_INIT_OK)				//未初始化		
 		return;
@@ -55,18 +54,18 @@ void TaskRun(void)
 	if(ms10==10)
 	{
 		ms10=0;					//每二十次中断执行一次,10ms
-		if(log_attitude)
-		{
-			i++;
-			printf("%5d,%-5.2f,%-5.2f,%-5.2f\r\n",i,Angle.x,Angle.y,Angle.z);
-		}
 	}
 	if(ms100==10)
 	{
 		ms100=0;
+		if(log_attitude)
+		{
+			printf("%-5.2f\t,%-5.2f\t,%-5.2f\r\n",Angle.x,Angle.y,Angle.z);
+		}
 	}
 	if(ms1000==1000)
 	{
+		
 		ms1000=0;
 	}
 		

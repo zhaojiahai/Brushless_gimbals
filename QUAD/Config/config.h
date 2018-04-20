@@ -54,10 +54,10 @@ typedef union
 }sensor_setup_t; //__attribute__((packed)) 
 
 typedef  struct{
-pid_t roll;
-pid_t pitch;	
-pid_t yaw;	
- }pid_group_t;
+	pid_t roll;
+	pid_t pitch;
+	pid_t yaw;	
+}pid_group_t;
 
 typedef union
 {
