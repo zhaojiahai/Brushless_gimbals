@@ -10,7 +10,7 @@ typedef struct
 	float kp;
 	float kd;
 	float ki;
-	float kdamp;
+	float power;
 
 }pid_t;
 

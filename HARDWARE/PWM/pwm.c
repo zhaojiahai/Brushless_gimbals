@@ -1,6 +1,7 @@
 #include "pwm.h"
 #include "stm32f10x_tim.h"
 #include "fastmath.h"
+#include <math.h>
 
 //@HackOS: 死区时间
 //@HackOS: 当DTG[7:0]=200 {二进制1100 1000}时,死区时间为(32+8)*Tdtg,Tdtg=8*Tdts=8*1/72,最终DT=40*8/72=4.44us,则想产生100us脉宽时,实际产生96us
@@ -11,6 +12,7 @@ int timer_4_5_deadtime_delay = 80; // in 18MHz ticks
 
 //@HackOS: 测试相输出用
 float testPhase = -0.09;
+//float testPhase = 5;
 
 static int g_YawOff = 1;						//@HackOS: YAW禁用标志
 static int g_Roll[3], g_Pitch[3], g_Yaw[3];		//@HackOS: PWM填充值
@@ -19,19 +21,43 @@ int MaxCnt[NUMAXIS];
 int MinCnt[NUMAXIS];
 int IrqCnt[NUMAXIS];
 
+////@HackOS: 设置PWM,采用查表法
+//void SetPWMFastTable(int *pwm, float pid, int power)
+//{
+//	int pidInt;
+//	int iPower;
+//	//@HackOS: 如果测试相输出
+//    if (testPhase >= 0)
+//    {
+//        pid = testPhase;
+//    }
+
+//	//@HackOS: 获取PID输出在正弦函数中的X索引值(整形)
+//    pidInt = (int)Round(pid / M_TWOPI * SINARRAYSIZE);
+//	//@HackOS: 超出,取余
+//    pidInt = pidInt % SINARRAYSIZE;
+
+//	//@HackOS: 负值,加最大值
+//    if (pidInt < 0)
+//    {
+//        pidInt = SINARRAYSIZE + pidInt;
+//    }
+
+//    iPower = 5 * power;
+//    pwm[0] = (sinDataI16[pidInt                          % SINARRAYSIZE] * iPower + SINARRAYSCALE / 2) / SINARRAYSCALE + (PWM_PERIODE / 2);
+//    pwm[1] = (sinDataI16[(pidInt + 1 * SINARRAYSIZE / 3)     % SINARRAYSIZE] * iPower + SINARRAYSCALE / 2) / SINARRAYSCALE + (PWM_PERIODE / 2);
+//    pwm[2] = (sinDataI16[(pidInt + (2 * SINARRAYSIZE + 1) / 3) % SINARRAYSIZE] * iPower + SINARRAYSCALE / 2) / SINARRAYSCALE + (PWM_PERIODE / 2);
+////	printf("%d,%d,%d\r\n",pwm[0],pwm[1],pwm[2]);
+//}
+
 //@HackOS: 设置PWM,采用查表法
-void SetPWMFastTable(int *pwm, float pid, int power)
+void SetPWMFastTable(int *pwm, float out, int power)
 {
 	int pidInt;
 	int iPower;
-	//@HackOS: 如果测试相输出
-    if (testPhase >= 0)
-    {
-        pid = testPhase;
-    }
 
 	//@HackOS: 获取PID输出在正弦函数中的X索引值(整形)
-    pidInt = (int)Round(pid / M_TWOPI * SINARRAYSIZE);
+    pidInt = (int)Round(out / M_TWOPI * SINARRAYSIZE);
 	//@HackOS: 超出,取余
     pidInt = pidInt % SINARRAYSIZE;
 
@@ -42,9 +68,19 @@ void SetPWMFastTable(int *pwm, float pid, int power)
     }
 
     iPower = 5 * power;
-    pwm[0] = (sinDataI16[pidInt                          % SINARRAYSIZE] * iPower + SINARRAYSCALE / 2) / SINARRAYSCALE + (PWM_PERIODE / 2);
+	
+	pwm[0] = (sinDataI16[pidInt                          % SINARRAYSIZE] * iPower + SINARRAYSCALE / 2) / SINARRAYSCALE + (PWM_PERIODE / 2);
     pwm[1] = (sinDataI16[(pidInt + 1 * SINARRAYSIZE / 3)     % SINARRAYSIZE] * iPower + SINARRAYSCALE / 2) / SINARRAYSCALE + (PWM_PERIODE / 2);
     pwm[2] = (sinDataI16[(pidInt + (2 * SINARRAYSIZE + 1) / 3) % SINARRAYSIZE] * iPower + SINARRAYSCALE / 2) / SINARRAYSCALE + (PWM_PERIODE / 2);
+	
+//	printf("%d,%d,%d\r\n",pwm[0],pwm[1],pwm[2]);
+}
+
+void SetPWMOrg(int *pwm, float output, int level)
+{
+    pwm[0] = (sin(output)        * 5 * level) + (PWM_PERIODE / 2);
+    pwm[1] = (sin(output + 2.09) * 5 * level) + (PWM_PERIODE / 2);
+    pwm[2] = (sin(output + 4.19) * 5 * level) + (PWM_PERIODE / 2);
 }
 
 //@HackOS: 设置PWM
@@ -65,6 +101,8 @@ void SetPWMData(int *target, int *pwm)
     __enable_irq();
 }
 
+
+
 //@HackOS: 激活中断
 void ActivateIRQ(TIM_TypeDef *tim)
 {
@@ -76,6 +114,20 @@ void ActivateIRQ(TIM_TypeDef *tim)
     __enable_irq();
 }
 
+//@HackOS: 设置PWM关闭
+void PWMOff(void)
+{
+	int pwm[3];
+	pwm[0] = pwm[1] = pwm[2] = 0;
+	SetPWMData(g_Roll, pwm);
+	SetPWMData(g_Pitch, pwm);
+
+	g_YawOff = 1;
+	TIM5->DIER = TIM_DIER_UIE; // Enable update interrupt
+	TIM1->DIER = TIM_DIER_UIE; // Enable update interrupt
+	TIM8->DIER = TIM_DIER_UIE; // Enable update interrupt
+}
+
 //@HackOS: 设置Pitch电机值
 //@HackOS: 输入参数:PID输出,POWER
 void SetPitchMotor(float pid, int power)
@@ -83,7 +135,7 @@ void SetPitchMotor(float pid, int power)
 	int pwm[3];
 	SetPWM(pwm, pid, power);
 	SetPWMData(g_Pitch, pwm);
-	ActivateIRQ(TIM1);
+	ActivateIRQ(TIM8);
 }
 
 //@HackOS: 设置Roll电机值
@@ -95,8 +147,12 @@ void SetRollMotor(float pid, int power)
 	SetPWM(pwm, pid, power);
 	//@HackOS: 填充PWM数据,结果在g_Roll
 	SetPWMData(g_Roll, pwm);
-
-	ActivateIRQ(TIM8);
+	//@HackOS: EVVGC代码有误,ROLL应该是TIM1而不是TIM8,EVVGC将pitch和roll互换
+	ActivateIRQ(TIM1);
+//	TIM1->CCR1 = g_Roll[0];
+//	TIM1->CCR2 = g_Roll[1];
+//	TIM1->CCR3 = g_Roll[2];
+//	printf("%d,%d,%d\r\n",pwm[0],pwm[1],pwm[2]);
 }
 
 //@HackOS: YAW限幅
@@ -210,13 +266,13 @@ void TIM1_UP_IRQHandler(void) // pitch axis
 
     __disable_irq();
     cnt = TIM1->CNT;
-    UpdateCounter(PITCH, cnt);
+    UpdateCounter(ROLL, cnt);
 
     if (cnt < MAX_CNT)  // make sure there is enough time to make all changes
     {
-        TIM1->CCR1 = g_Pitch[0];
-        TIM1->CCR2 = g_Pitch[1];
-        TIM1->CCR3 = g_Pitch[2];
+        TIM1->CCR1 = g_Roll[0];
+        TIM1->CCR2 = g_Roll[1];
+        TIM1->CCR3 = g_Roll[2];
 
         TIM1->DIER &= ~TIM_DIER_UIE; // disable update interrupt
     }
@@ -231,13 +287,13 @@ void TIM8_UP_IRQHandler(void) // roll axis
 
     __disable_irq();
     cnt = TIM8->CNT;
-    UpdateCounter(ROLL, cnt);
+    UpdateCounter(PITCH, cnt);
 
     if (cnt < MAX_CNT)  // make sure there is enough time to make all changes
     {
-        TIM8->CCR1 = g_Roll[0];
-        TIM8->CCR2 = g_Roll[1];
-        TIM8->CCR3 = g_Roll[2];
+        TIM8->CCR1 = g_Pitch[0];
+        TIM8->CCR2 = g_Pitch[1];
+        TIM8->CCR3 = g_Pitch[2];
 
         TIM8->DIER &= ~TIM_DIER_UIE; // disable update interrupt
     }

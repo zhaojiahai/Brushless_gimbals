@@ -21,7 +21,8 @@ extern int IrqCnt[NUMAXIS];
 
 
 extern void PWM_Init(void);
-
+extern void SetRollMotor(float pid, int power);
+extern void SetPitchMotor(float pid, int power);
 
 #endif
 

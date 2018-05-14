@@ -24,14 +24,13 @@ int main(void)
 	
 	TIM3_Int_Init(1000-1,72-1);
 	AHRS_Data_Init();								//姿态解算数据初始化
-	if(!MPU_Init())									//MPU6050初始化
-	{
-		printf("\r\nMPU6050 init success...\r\n");
-	}
-	else
+	while(MPU_Init())								//MPU6050初始化
 	{
 		printf("\r\nMPU6050 init failed...\r\n");
+		delay_ms(500);
 	}
+	printf("\r\nMPU6050 init success...\r\n");
+	
 //	MotorInit();	//电机初始化
 //	MotorPwmFlash(0,0,0,0);
 	GetConfig();
@@ -40,6 +39,10 @@ int main(void)
 		mpu6050.Gyro_Offset.x,mpu6050.Gyro_Offset.y,mpu6050.Gyro_Offset.z,
 		mpu6050.Acc_Offset.x,mpu6050.Acc_Offset.y,mpu6050.Acc_Offset.z
 	);
+	
+	//@HackOS: 初始化正弦函数数组
+    InitSinArray();
+	
 	SYS_INIT_OK=1;									//初始化完成
 	
 	while(1)

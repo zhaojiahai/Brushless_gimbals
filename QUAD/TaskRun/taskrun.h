@@ -4,4 +4,5 @@
 extern void TaskRun(void);
 extern uint8_t send_anodt;		//发送到匿名上位机
 extern uint8_t log_attitude;	//通过串口记录姿态信息
+extern uint8_t pid_test;		//@HackOS: PID测试任务
 #endif

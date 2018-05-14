@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F10X_HD,USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\USER;..\CORE;..\STM32F10x_FWLib\inc;..\SYSTEM\sys;..\HARDWARE\MPU6050;..\QUAD\ANO_DT;..\HARDWARE\TIM3;..\QUAD\TaskRun;..\SYSTEM\time;..\QUAD\AHRS;..\HARDWARE\MOTO;..\HARDWARE\UART4;..\QUAD\Commander;..\SYSTEM\delay;..\HARDWARE\STMFLASH;..\QUAD\Config;..\HARDWARE\PWM;..\QUAD\FastMath</IncludePath>
+              <IncludePath>..\USER;..\CORE;..\STM32F10x_FWLib\inc;..\SYSTEM\sys;..\HARDWARE\MPU6050;..\QUAD\ANO_DT;..\HARDWARE\TIM3;..\QUAD\TaskRun;..\SYSTEM\time;..\QUAD\AHRS;..\HARDWARE\MOTO;..\HARDWARE\UART4;..\QUAD\Commander;..\SYSTEM\delay;..\HARDWARE\STMFLASH;..\QUAD\Config;..\HARDWARE\PWM;..\QUAD\FastMath;..\QUAD\PID</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -549,6 +549,11 @@
               <FileName>fastmath.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\QUAD\FastMath\fastmath.c</FilePath>
+            </File>
+            <File>
+              <FileName>pid.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\QUAD\PID\pid.c</FilePath>
             </File>
           </Files>
         </Group>
